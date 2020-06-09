@@ -41,19 +41,20 @@ async fn main() {
 
     app.at("/").get(|req: tide::Request<State>| async move {
         let db_pool_2 = &req.state().db_pool;
-        let rows = sqlx::query!("select 1 as one where 1 = 2")
+        // let sql = "select 1 as one where 1 = 2";
+        let rows = sqlx::query!("select now() as now")
             .fetch_one(db_pool_2)
             .await?;
         // dbg!(rows);
 
         println!("{:?}", rows);
-        println!("{:?}", rows.one);
-        Ok("Hello from uptime")
+        println!("{:?}", rows.now);
+        Ok("Hello from uptime-rs.")
     });
 
     app.at("/json").get(|_| async move {
         let n = 100;
-        let json = json!({"array":     [1,n,3]});
+        let json = json!({"array":     [1,n,3], "val": {"test": 1}});
         Ok(tide::Response::new(tide::StatusCode::Ok).body_json(&json)?)
     });
 

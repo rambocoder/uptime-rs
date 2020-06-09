@@ -45,10 +45,10 @@ async fn main() {
          let rows = sqlx::query!("select now() as now")
              .fetch_one(db_pool_2)
              .await?;
-         dbg!(rows);
+        //  dbg!(rows);
 
-        // println!("{:?}", rows);
-        // println!("{:?}", rows.now);
+        println!("{:?}", rows);
+        println!("{:?}", rows.now);
         Ok("Hello from uptime-rs.")
     });
 

@@ -42,13 +42,13 @@ async fn main() {
     app.at("/").get(|req: tide::Request<State>| async move {
         let db_pool_2 = &req.state().db_pool;
         // let sql = "select 1 as one where 1 = 2";
-        let rows = sqlx::query!("select now() as now")
-            .fetch_one(db_pool_2)
-            .await?;
-        // dbg!(rows);
+         let rows = sqlx::query!("select now() as now")
+             .fetch_one(db_pool_2)
+             .await?;
+         dbg!(rows);
 
-        println!("{:?}", rows);
-        println!("{:?}", rows.now);
+        // println!("{:?}", rows);
+        // println!("{:?}", rows.now);
         Ok("Hello from uptime-rs.")
     });
 

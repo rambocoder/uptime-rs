@@ -3,6 +3,7 @@ use serde_json::json;
 use sqlx::PgPool;
 use sqlx::Pool;
 use thiserror::Error;
+use tide::Server;
 
 // fn min<T: Ord>(a: T, b: T) -> T {
 //     let r = Range {
@@ -20,6 +21,13 @@ use thiserror::Error;
 
 #[async_std::main]
 async fn main() {
+    let app = server().await;
+
+    let r = app.listen("127.0.0.1:8080").await.unwrap();
+    return r;
+}
+
+async fn server() -> Server<State> {
     dotenv::dotenv().ok();
     pretty_env_logger::init();
 
@@ -42,9 +50,9 @@ async fn main() {
     app.at("/").get(|req: tide::Request<State>| async move {
         let db_pool_2 = &req.state().db_pool;
         // let sql = "select 1 as one where 1 = 2";
-         let rows = sqlx::query!("select now() as now")
-             .fetch_one(db_pool_2)
-             .await?;
+        let rows = sqlx::query!("select now() as now")
+            .fetch_one(db_pool_2)
+            .await?;
         //  dbg!(rows);
 
         println!("{:?}", rows);
@@ -54,11 +62,10 @@ async fn main() {
 
     app.at("/json").get(|_| async move {
         let n = 100;
-        let json = json!({"array":     [1,n,3], "val": {"test": 1}});
+        let json = json!({"array": [1,n,3], "value": {"test": 1}});
         Ok(tide::Response::new(tide::StatusCode::Ok).body_json(&json)?)
     });
-
-    app.listen("127.0.0.1:8080").await.unwrap();
+    app
 }
 
 #[derive(Debug)]
@@ -86,8 +93,56 @@ mod test {
     #[allow(unused_imports)]
     use super::*;
     use futures::{executor::block_on, prelude::*};
-    use http_service::{HttpService, Request, Response};
+    use http_service::{HttpService, Response};
+    use http_types::{Method, Request, Url};
+
+    #[derive(Debug)]
+    pub struct TestBackend<T: HttpService> {
+        service: T,
+        connection: T::Connection,
+    }
+
+    impl<T: HttpService> TestBackend<T> {
+        fn wrap(service: T) -> Result<Self, <T::ConnectionFuture as TryFuture>::Error> {
+            let connection = block_on(service.connect().into_future())?;
+            Ok(Self {
+                service,
+                connection,
+            })
+        }
+
+        // Send a request
+        pub fn simulate(
+            &mut self,
+            req: Request,
+        ) -> Result<Response, <T::ResponseFuture as TryFuture>::Error> {
+            block_on(
+                self.service
+                    .respond(self.connection.clone(), req)
+                    .into_future(),
+            )
+        }
+    }
+    pub fn make_server<T: HttpService>(
+        service: T,
+    ) -> std::result::Result<test::TestBackend<T>, <T as http_service::HttpService>::ConnectionError>
+    {
+        TestBackend::wrap(service)
+    }
 
     #[async_std::test]
-    async fn a_test() {}
+    async fn tests() {
+        let server = server().await;
+        let mut server = make_server(server).unwrap();
+        let url = Url::parse("http://localhost/json").unwrap();
+        dbg!(url.clone());
+        // println!("{:?}", url);
+        let req = Request::new(Method::Get, url);
+        let res = server.simulate(req).unwrap();
+        assert_eq!(res.status(), 200);
+        assert_eq!(
+            res.body_string().await.unwrap(),
+            "{\"array\":[1,100,3],\"value\":{\"test\":1}}"
+        );
+    }
 }

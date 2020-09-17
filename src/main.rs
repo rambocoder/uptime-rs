@@ -140,9 +140,7 @@ mod test {
         let req = Request::new(Method::Get, url);
         let res = server.simulate(req).unwrap();
         assert_eq!(res.status(), 200);
-        assert_eq!(
-            res.body_string().await.unwrap(),
-            "{\"array\":[1,100,3],\"value\":{\"test\":1}}"
-        );
+        let z = res.body_string().await?;
+        assert_eq!(z, "{\"array\":[1,100,3],\"value\":{\"test\":1}}");
     }
 }

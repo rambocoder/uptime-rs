@@ -35,7 +35,7 @@ async fn server() -> Server<State> {
 
     println!("{}", database_url);
 
-    let db_pool: PgPool = Pool::new(&database_url).await.unwrap();
+    let db_pool = Pool::new(&database_url).await.unwrap();
 
     let mut app = tide::Server::with_state(State { db_pool });
 
@@ -140,7 +140,7 @@ mod test {
         let req = Request::new(Method::Get, url);
         let res = server.simulate(req).unwrap();
         assert_eq!(res.status(), 200);
-        let z = res.body_string().await?;
+        let z = res.body_string().await.unwrap();
         assert_eq!(z, "{\"array\":[1,100,3],\"value\":{\"test\":1}}");
     }
 }

@@ -1,4 +1,6 @@
+[commented.out.target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
+
 [target.x86_64-unknown-linux-gnu]
-rustflags = [
-    "-C", "link-arg=-fuse-ld=lld"
-]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=/home/linuxbrew/.linuxbrew/bin/mold"]
